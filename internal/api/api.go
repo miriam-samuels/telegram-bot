@@ -17,16 +17,44 @@ func GetNftNews() string {
 	if err != nil {
 		log.Fatalln("Error Occured")
 	}
+	// Define the HTML template
+	const tmpl = `
+<b>Latest NFT News (from <a href="https://pr-1540.ddv7k8ml5gut2.amplifyapp.com/nft-news">Kyzzen</a></b>)
+{{range $index, $item := .}}
+{{add $index 1}}. {{$item.Title}}
+<a href="{{$item.Link}}">Read More - {{capitalize $item.Source}}</a>
+{{end}}
+			`
+	message := helper.FormatHTMLMessage(res, tmpl)
 
-	// return fmt.Sprintf(
-	// 	"Title: %s\nDescription: %s\nAttachment: %s\nLinks: %s\n",
-	// 	user.Name,
-	// 	user.Description,
-	// 	user.Attachment,
-	// 	user.Links,
-	// )
+	return message
+}
 
-	return res
+func GetSpaces() string {
+	reqData := helper.APIRequest{
+		Method: "GET",
+		Route:  "fetch-spaces",
+	}
+
+	res, err := helper.FetchData(&reqData)
+	if err != nil {
+		log.Fatalln("Error Occured")
+	}
+
+	// Define the HTML template
+	const tmpl = `
+<b>Upcoming X Spaces Today (from <a href="https://pr-1540.ddv7k8ml5gut2.amplifyapp.com/twitter-spaces">Kyzzen</a></b>)
+{{range $index, $item := .}}
+{{formatDate $item.Scheduled}} UTC
+<b>{{cleanText $item.Title}}</b> <a href="{{$item.Space}}">(View Space)</a>
+Host: <a href="x.com/{{$item.UserHandle}}">{{$item.UserHandle}}</a>
+{{end}}
+<i>Check out the full list of upcoming X spaces on <a href="https://pr-1540.ddv7k8ml5gut2.amplifyapp.com/twitter-spaces">Kyzzen</a>:</i>
+			`
+
+	message := helper.FormatHTMLMessage(res[:20], tmpl)
+
+	return message
 }
 
 func GetMintDrops() interface{} {

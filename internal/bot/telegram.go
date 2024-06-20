@@ -130,6 +130,10 @@ func handleMessage(message *tgbotapi.Message) {
 			message := api.GetNftNews()
 			Telegram.SendUserMessage(message, user.ID)
 			break
+		case "/spaces":
+			message := api.GetSpaces()
+			Telegram.SendUserMessage(message, user.ID)
+			break
 		case "/menu":
 			err = sendMenu(message.Chat.ID)
 			break

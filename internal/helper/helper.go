@@ -83,17 +83,20 @@ type APIRequest struct {
 }
 
 type DataItem struct {
-	Title   string `json:"title"`
-	Preview string `json:"preview"`
-	Source  string `json:"source"`
-	Link    string `json:"link"`
+	Title      string `json:"title"`
+	Preview    string `json:"preview"`
+	Source     string `json:"source"`
+	Link       string `json:"link"`
+	Space      string `json:"spaceUrl"`
+	UserHandle string `json:"userhandle"`
+	Scheduled  string `json:"scheduled"`
 }
 
 type ApiResponse struct {
 	Data []DataItem `json:"data"`
 }
 
-func FetchData(reqData *APIRequest) (string, error) {
+func FetchData(reqData *APIRequest) ([]DataItem, error) {
 	baseURL := "http://k8s-default-botdatas-9125b50e86-199550140.us-east-2.elb.amazonaws.com/" + reqData.Route
 
 	// Create a new HTTP request
@@ -125,27 +128,35 @@ func FetchData(reqData *APIRequest) (string, error) {
 		log.Fatalf("Failed to unmarshal user data: %v", err)
 	}
 
-	message := formatHTMLMessage(responseBody.Data[:12])
-
-	return message, nil
+	return responseBody.Data, nil
 
 }
 
 // Function to format data into HTML message
-func formatHTMLMessage(data []DataItem) string {
-	// Define the HTML template
-	const tmpl = `
-<b>NFT News - Past 24H (Sponsored by <a href="https://pr-1540.ddv7k8ml5gut2.amplifyapp.com/"> Kyzzen </a></b>)
-{{range $index, $item := .}}
-<b>{{add $index 1}}. {{$item.Title}}</b>
-{{$item.Preview}}
-<a href="{{$item.Link}}">Read More - {{capitalize $item.Source}}</a>
-{{end}}
-<i>Today's NFT News wrap-up was brought to you by <a href="https://pr-1540.ddv7k8ml5gut2.amplifyapp.com/"> Kyzzen </a>:</i>
-	`
+func FormatHTMLMessage(data []DataItem, tmpl string) string {
 	funcMap := template.FuncMap{
 		"add":        func(a, b int) int { return a + b },
 		"capitalize": func(s string) string { return strings.ToUpper(string(s[0])) + s[1:] },
+		"formatDate": func(t string) string {
+			layout := "2006-01-02T15:04:05Z"
+			d, err := time.Parse(layout, t)
+			if err != nil {
+				log.Printf("Error parsing date: %v", err)
+				return t // return the original string if parsing fails
+			}
+			return d.Format("02 Jan - 15:04")
+		},
+		"cleanText": func(s string) string {
+			words := strings.Fields(s)
+			filteredWords := []string{}
+			for _, word := range words {
+				if !strings.HasPrefix(word, "#") {
+					cleanedWord := strings.ReplaceAll(word, "@", "")
+					filteredWords = append(filteredWords, cleanedWord)
+				}
+			}
+			return strings.Join(filteredWords, " ")
+		},
 	}
 
 	// Parse the template
