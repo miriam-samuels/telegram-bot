@@ -2,55 +2,68 @@ package api
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/miriam-samuels/telegram-bot/internal/helper"
+	"github.com/miriam-samuels/telegram-bot/internal/template"
 )
 
 func GetNftNews() (string, error) {
-	reqData := helper.APIRequest{
-		Method: "GET",
-		Route:  "fetch-news",
+	reqData := helper.GraphQLRequest{
+		Query: `
+		query MyQuery($orderBy: String, $limit: Int) {
+			nftNews(orderBy: $orderBy, limit: $limit) {
+			  nodes {
+				preview
+				source
+				title
+				link
+			  }
+			}
+		  }`,
+		Variables: map[string]string{
+			"limit":   "10",
+			"orderBy": "publishDate",
+		},
 	}
 
-	res, err := helper.FetchData(&reqData)
+	res, err := helper.FetchGraphQlData(&reqData)
 	if err != nil {
 		return "", fmt.Errorf("error pulling news data; %v", err)
 	}
-	// Define the HTML template
-	const tmpl = `
-<b>Latest NFT News (from <a href="https://kyzzen.io/nft-news">Kyzzen</a></b>)
-{{range $index, $item := .}}
-{{add $index 1}}. {{$item.Title}}
-<a href="{{$item.Link}}">Read More - {{capitalize $item.Source}}</a>
-{{end}}
-			`
-	message := helper.FormatHTMLMessage(res, tmpl)
+
+	message := helper.FormatHTMLMessage(res["nftNews"].Nodes, template.News)
 
 	return message, nil
 }
 
 func GetSpaces() (string, error) {
-	reqData := helper.APIRequest{
-		Method: "GET",
-		Route:  "fetch-spaces",
+	reqData := helper.GraphQLRequest{
+		Query: `
+		query MyQuery($orderBy: String, $scheduled: DateTime, $limit: Int) {
+			twitterSpace(orderBy: $orderBy, scheduled: $scheduled, limit: $limit) {
+			  nodes {
+				title
+				spaceUrl
+				scheduled
+				userhandle
+			  }
+			}
+		  }`,
+		Variables: map[string]string{
+			"limit":   "10",
+			"orderBy": "scheduled",
+			"scheduled": time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
+		},
 	}
 
-	res, err := helper.FetchData(&reqData)
+	res, err := helper.FetchGraphQlData(&reqData)
+
 	if err != nil {
 		return "", fmt.Errorf("error pulling space data; %v", err)
 	}
 
-	// Define the HTML template
-	const tmpl = `
-<b>Upcoming X Spaces Today (from <a href="https://kyzzen.io/twitter-spaces">Kyzzen</a></b>)
-{{range $index, $item := .}}
-{{formatDate $item.Scheduled}} UTC
-<b>{{cleanText $item.Title}}</b> <a href="{{$item.Space}}">(View Space)</a>
-Host: <a href="x.com/{{$item.UserHandle}}">{{$item.UserHandle}}</a>
-{{end}}
-<i>Check out the full list of upcoming X spaces on <a href="https://kyzzen.io/twitter-spaces">Kyzzen</a>:</i>
-			`
-
-	message := helper.FormatHTMLMessage(res[1:], tmpl)
+	message := helper.FormatHTMLMessage(res["twitterSpace"].Nodes, template.Spaces)
 
 	return message, nil
 }

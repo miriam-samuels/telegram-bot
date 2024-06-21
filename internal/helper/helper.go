@@ -14,8 +14,8 @@ import (
 
 // GraphQL query structure
 type GraphQLRequest struct {
-	Query     string                 `json:"query"`
-	Variables map[string]interface{} `json:"variables"`
+	Query     string            `json:"query"`
+	Variables map[string]string `json:"variables"`
 }
 
 // GraphQL response structure
@@ -24,10 +24,8 @@ type GraphQLResponse struct {
 	Errors []interface{}   `json:"errors"`
 }
 
-type APIRequest struct {
-	Method string                 `json:"method"`
-	Route  string                 `json:"route"`
-	Body   map[string]interface{} `json:"body"`
+type Node struct {
+	Nodes []DataItem `json:"nodes"`
 }
 
 type DataItem struct {
@@ -40,49 +38,8 @@ type DataItem struct {
 	Scheduled  string `json:"scheduled"`
 }
 
-type ApiResponse struct {
-	Data []DataItem `json:"data"`
-}
-
 // GraphQL query structure
-
-func FetchData(reqData *APIRequest) ([]DataItem, error) {
-	baseURL := "http://k8s-default-botdatas-9125b50e86-199550140.us-east-2.elb.amazonaws.com/" + reqData.Route
-
-	// Create a new HTTP request
-	req, err := http.NewRequest(reqData.Method, baseURL, nil)
-	if err != nil {
-		log.Fatalf("Failed to create request: %v", err)
-	}
-
-	// Send the HTTP request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatalf("The HTTP response failed with error %s\n", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("Rrquest failed: %v", err)
-	}
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Failed to read response body: %v", err)
-	}
-
-	var responseBody ApiResponse
-
-	if err := json.Unmarshal(body, &responseBody); err != nil {
-		log.Fatalf("Failed to unmarshal user data: %v", err)
-	}
-
-	return responseBody.Data, nil
-
-}
-
-func FetchGraphQlData(reqBody *GraphQLRequest) (interface{}, error) {
+func FetchGraphQlData(reqBody *GraphQLRequest) (map[string]Node, error) {
 	value, err := json.Marshal(reqBody)
 	if err != nil {
 		log.Fatalf("Failed to marshal request body: %v", err)
@@ -105,7 +62,7 @@ func FetchGraphQlData(reqBody *GraphQLRequest) (interface{}, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		log.Fatalf("Rrquest failed: %v", err)
+		log.Fatalf("Rrquest failed: %v", response)
 	}
 
 	// Read the response body
@@ -125,7 +82,8 @@ func FetchGraphQlData(reqBody *GraphQLRequest) (interface{}, error) {
 		log.Fatalf("GraphQL query errors: %v", gqlResp.Errors)
 	}
 
-	var responseBody interface{}
+	var responseBody map[string]Node
+
 	if err := json.Unmarshal(gqlResp.Data, &responseBody); err != nil {
 		log.Fatalf("Failed to unmarshal user data: %v", err)
 	}
