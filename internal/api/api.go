@@ -1,12 +1,11 @@
 package api
 
 import (
-	"log"
-
+	"fmt"
 	"github.com/miriam-samuels/telegram-bot/internal/helper"
 )
 
-func GetNftNews() string {
+func GetNftNews() (string, error) {
 	reqData := helper.APIRequest{
 		Method: "GET",
 		Route:  "fetch-news",
@@ -14,7 +13,7 @@ func GetNftNews() string {
 
 	res, err := helper.FetchData(&reqData)
 	if err != nil {
-		log.Fatalln("Error Occured")
+		return "", fmt.Errorf("error pulling news data; %v", err)
 	}
 	// Define the HTML template
 	const tmpl = `
@@ -26,10 +25,10 @@ func GetNftNews() string {
 			`
 	message := helper.FormatHTMLMessage(res, tmpl)
 
-	return message
+	return message, nil
 }
 
-func GetSpaces() string {
+func GetSpaces() (string, error) {
 	reqData := helper.APIRequest{
 		Method: "GET",
 		Route:  "fetch-spaces",
@@ -37,7 +36,7 @@ func GetSpaces() string {
 
 	res, err := helper.FetchData(&reqData)
 	if err != nil {
-		log.Fatalln("Error Occured")
+		return "", fmt.Errorf("error pulling space data; %v", err)
 	}
 
 	// Define the HTML template
@@ -53,5 +52,5 @@ Host: <a href="x.com/{{$item.UserHandle}}">{{$item.UserHandle}}</a>
 
 	message := helper.FormatHTMLMessage(res[1:], tmpl)
 
-	return message
+	return message, nil
 }
