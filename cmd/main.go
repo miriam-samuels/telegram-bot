@@ -25,8 +25,6 @@ func init() {
 
 func main() {
 
-	// startServer()
-
 	token := os.Getenv("TELEGRAM_TOKEN")
 	if token == "" {
 		log.Fatal("TELEGRAM_BOT_TOKEN environment variable is required")

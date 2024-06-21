@@ -57,7 +57,7 @@ func (bot *TelegramBot) SendUserMessage(message string, user int64) {
 
 	// Send the message
 	if _, err := bot.Api.Send(msg); err != nil {
-		log.Fatalf("Failed to send message: %v", err)
+		log.Fatalf("Failed to send message:: %v", err)
 	}
 
 	log.Println("Message sent successfully")

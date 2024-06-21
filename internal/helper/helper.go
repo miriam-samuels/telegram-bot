@@ -24,6 +24,26 @@ type GraphQLResponse struct {
 	Errors []interface{}   `json:"errors"`
 }
 
+type APIRequest struct {
+	Method string                 `json:"method"`
+	Route  string                 `json:"route"`
+	Body   map[string]interface{} `json:"body"`
+}
+
+type DataItem struct {
+	Title      string `json:"title"`
+	Preview    string `json:"preview"`
+	Source     string `json:"source"`
+	Link       string `json:"link"`
+	Space      string `json:"spaceUrl"`
+	UserHandle string `json:"userhandle"`
+	Scheduled  string `json:"scheduled"`
+}
+
+type ApiResponse struct {
+	Data []DataItem `json:"data"`
+}
+
 func FetchGraphQlData(reqBody *GraphQLRequest) (interface{}, error) {
 	value, err := json.Marshal(reqBody)
 	if err != nil {
@@ -76,25 +96,6 @@ func FetchGraphQlData(reqBody *GraphQLRequest) (interface{}, error) {
 }
 
 // GraphQL query structure
-type APIRequest struct {
-	Method string                 `json:"method"`
-	Route  string                 `json:"route"`
-	Body   map[string]interface{} `json:"body"`
-}
-
-type DataItem struct {
-	Title      string `json:"title"`
-	Preview    string `json:"preview"`
-	Source     string `json:"source"`
-	Link       string `json:"link"`
-	Space      string `json:"spaceUrl"`
-	UserHandle string `json:"userhandle"`
-	Scheduled  string `json:"scheduled"`
-}
-
-type ApiResponse struct {
-	Data []DataItem `json:"data"`
-}
 
 func FetchData(reqData *APIRequest) ([]DataItem, error) {
 	baseURL := "http://k8s-default-botdatas-9125b50e86-199550140.us-east-2.elb.amazonaws.com/" + reqData.Route
@@ -164,10 +165,16 @@ func FormatHTMLMessage(data []DataItem, tmpl string) string {
 	if err != nil {
 		log.Fatalf("Error parsing template: %v", err)
 	}
-
+	// cur retuned data
+	var news []DataItem
+	if len(data) < 10 {
+		news = data
+	} else {
+		news = data[:10]
+	}
 	// Execute the template with the data
 	var tpl bytes.Buffer
-	if err := t.Execute(&tpl, data); err != nil {
+	if err := t.Execute(&tpl, news); err != nil {
 		log.Fatalf("Error executing template: %v", err)
 	}
 

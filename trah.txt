@@ -1,0 +1,12 @@
+	// query := helper.GraphQLRequest{
+	// 	Query: `query MyQuery {
+	// 		twitterSpace {
+	// 		  nodes {
+	// 			userhandle
+	// 			title
+	// 			spaceUrl
+	// 			scheduled
+	// 		  }
+	// 		}
+	// 	  }`,
+	// }
