@@ -3,13 +3,11 @@ package bot
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"strings"
 
 	tgApi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/miriam-samuels/telegram-bot/internal/api"
 )
 
@@ -98,13 +96,11 @@ func receiveUpdates(ctx context.Context, updates tgApi.UpdatesChannel) {
 
 }
 
-func handleUpdate(update tgbotapi.Update) {
+func handleUpdate(update tgApi.Update) {
 	switch {
 	// Handle messages
 	case update.Message != nil:
 		handleMessage(update.Message)
-		break
-
 	// Handle button clicks
 	case update.CallbackQuery != nil:
 		// handleButton(update.CallbackQuery)
@@ -112,7 +108,7 @@ func handleUpdate(update tgbotapi.Update) {
 	}
 }
 
-func handleMessage(message *tgbotapi.Message) {
+func handleMessage(message *tgApi.Message) {
 	user := message.From
 	text := message.Text
 
@@ -129,14 +125,11 @@ func handleMessage(message *tgbotapi.Message) {
 		case "/news":
 			message := api.GetNftNews()
 			Telegram.SendUserMessage(message, user.ID)
-			break
 		case "/spaces":
 			message := api.GetSpaces()
 			Telegram.SendUserMessage(message, user.ID)
-			break
-		case "/menu":
-			err = sendMenu(message.Chat.ID)
-			break
+			// case "/menu":
+			// 	err = sendMenu(message.Chat.ID)
 		}
 	}
 
@@ -145,28 +138,11 @@ func handleMessage(message *tgbotapi.Message) {
 	}
 }
 
-// // When we get a command, we react accordingly
-// func handleCommand(chatId int64, command string,) error {
-// 	var err error
-
-// 	switch command {
-// 	case "/news":
-// 		message := api.GetNftNews()
-// 		Telegram.SendUserMessage(message)
-// 		break
-// 	case "/menu":
-// 		err = sendMenu(chatId)
-// 		break
-// 	}
-
-// 	return err
+// func sendMenu(chatId int64) error {
+// 	fmt.Println(chatId)
+// 	msg := tgApi.NewMessage(chatId, firstMenu)
+// 	msg.ParseMode = tgApi.ModeHTML
+// 	msg.ReplyMarkup = firstMenuMarkup
+// 	_, err := bot.Send(msg)
+// 	return nil
 // }
-
-func sendMenu(chatId int64) error {
-	fmt.Println(chatId)
-	// msg := tgbotapi.NewMessage(chatId, firstMenu)
-	// msg.ParseMode = tgbotapi.ModeHTML
-	// msg.ReplyMarkup = firstMenuMarkup
-	// _, err := bot.Send(msg)
-	return nil
-}

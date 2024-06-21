@@ -44,6 +44,44 @@ type ApiResponse struct {
 	Data []DataItem `json:"data"`
 }
 
+// GraphQL query structure
+
+func FetchData(reqData *APIRequest) ([]DataItem, error) {
+	baseURL := "http://k8s-default-botdatas-9125b50e86-199550140.us-east-2.elb.amazonaws.com/" + reqData.Route
+
+	// Create a new HTTP request
+	req, err := http.NewRequest(reqData.Method, baseURL, nil)
+	if err != nil {
+		log.Fatalf("Failed to create request: %v", err)
+	}
+
+	// Send the HTTP request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatalf("The HTTP response failed with error %s\n", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Fatalf("Rrquest failed: %v", err)
+	}
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Failed to read response body: %v", err)
+	}
+
+	var responseBody ApiResponse
+
+	if err := json.Unmarshal(body, &responseBody); err != nil {
+		log.Fatalf("Failed to unmarshal user data: %v", err)
+	}
+
+	return responseBody.Data, nil
+
+}
+
 func FetchGraphQlData(reqBody *GraphQLRequest) (interface{}, error) {
 	value, err := json.Marshal(reqBody)
 	if err != nil {
@@ -93,44 +131,6 @@ func FetchGraphQlData(reqBody *GraphQLRequest) (interface{}, error) {
 	}
 
 	return responseBody, nil
-}
-
-// GraphQL query structure
-
-func FetchData(reqData *APIRequest) ([]DataItem, error) {
-	baseURL := "http://k8s-default-botdatas-9125b50e86-199550140.us-east-2.elb.amazonaws.com/" + reqData.Route
-
-	// Create a new HTTP request
-	req, err := http.NewRequest(reqData.Method, baseURL, nil)
-	if err != nil {
-		log.Fatalf("Failed to create request: %v", err)
-	}
-
-	// Send the HTTP request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatalf("The HTTP response failed with error %s\n", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("Rrquest failed: %v", err)
-	}
-
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Failed to read response body: %v", err)
-	}
-
-	var responseBody ApiResponse
-
-	if err := json.Unmarshal(body, &responseBody); err != nil {
-		log.Fatalf("Failed to unmarshal user data: %v", err)
-	}
-
-	return responseBody.Data, nil
-
 }
 
 // Function to format data into HTML message

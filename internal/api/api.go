@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/miriam-samuels/telegram-bot/internal/helper"
@@ -55,60 +54,4 @@ Host: <a href="x.com/{{$item.UserHandle}}">{{$item.UserHandle}}</a>
 	message := helper.FormatHTMLMessage(res[1:], tmpl)
 
 	return message
-}
-
-func GetMintDrops() interface{} {
-	queryString := `
-	query ($limit: Int, $offset: Int) {
-	mintCalendar(limit: $limit, offset: $offset) {
-		nodes {
-		  atlas3GiveawayUrl
-		  blockchain
-		  collectionId
-		  createdAt
-		  creatorEmail
-		  creatorId
-		  description
-		  website
-		  upvoteCount
-		  updatedAt
-		  twitterImageProfileUrl
-		  twitterFollowers
-		  twitter
-		  thumbnailUrl
-		  supply
-		  subberPresaleUrl
-		  subberGiveawayUrl
-		  source
-		  price
-		  name
-		  logoUrl
-		  launchpadUrl
-		  launchDate
-		  isRejected
-		  isOwn
-		  isApproved
-		  id
-		  discord
-		}
-	  }
-	  }`
-
-	// Create a new GraphQL request
-	reqBody := helper.GraphQLRequest{
-		Query: queryString,
-		Variables: map[string]interface{}{
-			"limit":  "10",
-			"offset": "10",
-		},
-	}
-
-	res, err := helper.FetchGraphQlData(&reqBody)
-	if err != nil {
-		log.Fatalln("Error Occured")
-	}
-
-	fmt.Printf("ESP: %v", res)
-
-	return res
 }
