@@ -119,15 +119,18 @@ func handleMessage(message *tgApi.Message) {
 	// Print to console
 	log.Printf("%s wrote %s", user.UserName, text)
 
-	var err error
+	var (
+		err error
+		msg string
+	)
 	if strings.HasPrefix(text, "/") {
 		switch text {
 		case "/news":
-			message := api.GetNftNews()
-			Telegram.SendUserMessage(message, user.ID)
+			msg, err = api.GetNftNews()
+			Telegram.SendUserMessage(msg, user.ID)
 		case "/spaces":
-			message := api.GetSpaces()
-			Telegram.SendUserMessage(message, user.ID)
+			msg, err = api.GetSpaces()
+			Telegram.SendUserMessage(msg, user.ID)
 			// case "/menu":
 			// 	err = sendMenu(message.Chat.ID)
 		}
