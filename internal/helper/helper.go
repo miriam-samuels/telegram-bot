@@ -1,164 +1,164 @@
 package helper
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
+	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strings"
-	"text/template"
 	"time"
 )
 
-// GraphQL query structure
-type GraphQLRequest struct {
-	Query     string                 `json:"query"`
-	Variables map[string]interface{} `json:"variables"`
+func DivideFromSymbol(word string, symbol string) string {
+	formattedWord, _, _ := strings.Cut(word, symbol)
+	return formattedWord
 }
 
-// GraphQL response structure
-type GraphQLResponse struct {
-	Data   json.RawMessage `json:"data"`
-	Errors []interface{}   `json:"errors"`
+func CheckWordSimilarity(word string, cmp string) bool {
+	unspacedWord := strings.ToLower(strings.ReplaceAll(word, " ", ""))
+	unspacedCmp := strings.ToLower(strings.ReplaceAll(cmp, " ", ""))
+
+	// Return true if the words are already the same when unspaced or contains word
+	if unspacedWord == unspacedCmp {
+		return true
+	}
+
+	wordSlice := strings.Split(word, " ")
+	cmpSlice := strings.Split(cmp, " ")
+
+	//  only use this when the word sent by user is more than 1 eg: fox federation  wll give famous fox federation and transdimentional fox federation
+	if strings.Contains(unspacedCmp, unspacedWord) && len(wordSlice) > 1 {
+		return true
+	}
+
+	//  to avoid too mny option only use this when the word .... eg: gen2 will give smb gen2 ....
+	if len(wordSlice) == 1 && len(cmpSlice) == 2 {
+		for i := range wordSlice {
+			for j := range cmpSlice {
+				if strings.EqualFold(wordSlice[i], cmpSlice[j]) {
+					return true
+				}
+			}
+		}
+	}
+
+	// Create a copy of unspacedWord to modify during the loop
+	numberMatched := characterMatch(unspacedWord, unspacedCmp)
+	orderMatched := orderMatch(unspacedWord, unspacedCmp, 2)
+	reverseOrderMatched := reverseOrderMatch(unspacedWord, unspacedCmp, 2)
+
+	if reverseOrderMatched == len(unspacedWord) && len(wordSlice) > 1 {
+		return true
+	}
+
+	if orderMatched == len(unspacedWord) && len(wordSlice) > 1 {
+		return true
+	}
+
+	if len(unspacedWord) > 2 {
+		return bool((numberMatched >= (len(unspacedWord)-2)) && (len(unspacedCmp) <= (len(unspacedWord)+1))) && orderMatched > 3
+	}
+
+	return false
+}
+func characterMatch(word string, cmp string) int {
+	numberMatched := 0
+
+	// Create a copy of unspacedWord to modify during the loop
+	temp := word
+	for _, ch := range cmp {
+		if strings.ContainsRune(temp, ch) && len(temp) > 0 {
+			numberMatched++
+			temp = strings.Replace(temp, string(ch), "", 1)
+		}
+	}
+
+	return numberMatched
 }
 
-func FetchGraphQlData(reqBody *GraphQLRequest) (interface{}, error) {
-	value, err := json.Marshal(reqBody)
-	if err != nil {
-		log.Fatalf("Failed to marshal request body: %v", err)
+func orderMatch(word string, cmp string, tolerance int) int {
+	toleranceTaken := 0
+	orderMatched := 0
+
+	minimum := min(len(word), len(cmp))
+
+	for i := 0; i < minimum; i++ {
+		if word[i] == cmp[i] {
+			orderMatched++
+		} else {
+			if toleranceTaken <= tolerance && i > 1 {
+				orderMatched++
+				toleranceTaken++
+			} else {
+				break
+			}
+		}
 	}
 
-	request, err := http.NewRequest(http.MethodPost, os.Getenv("GRAPHQL_ENDPOINT"), bytes.NewBuffer(value))
-	if err != nil {
-		log.Fatalf("Failed to create request: %v", err)
-	}
-
-	request.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{Timeout: time.Second * 60}
-
-	response, err := client.Do(request)
-	if err != nil {
-		log.Fatalf("The HTTP response failed with error %s\n", err)
-	}
-
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		log.Fatalf("Rrquest failed: %v", err)
-	}
-
-	// Read the response body
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		log.Fatalf("Failed to read response body: %v", err)
-	}
-
-	// Parse the response body
-	var gqlResp GraphQLResponse
-	if err := json.Unmarshal(body, &gqlResp); err != nil {
-		log.Fatalf("Failed to unmarshal response body: %v", err)
-	}
-
-	// Check for errors in the GraphQL response
-	if len(gqlResp.Errors) > 0 {
-		log.Fatalf("GraphQL query errors: %v", gqlResp.Errors)
-	}
-
-	var responseBody interface{}
-	if err := json.Unmarshal(gqlResp.Data, &responseBody); err != nil {
-		log.Fatalf("Failed to unmarshal user data: %v", err)
-	}
-
-	return responseBody, nil
+	return orderMatched
 }
 
-// GraphQL query structure
-type APIRequest struct {
-	Method string                 `json:"method"`
-	Route  string                 `json:"route"`
-	Body   map[string]interface{} `json:"body"`
+func reverseOrderMatch(word string, cmp string, tolerance int) int {
+
+	orderReverseMatched := 0
+
+	toleranceTakenReverse := 0
+
+	minimum := min(len(word), len(cmp))
+
+	for i := 0; i < minimum; i++ {
+		if word[len(word)-1-i] == cmp[len(cmp)-1-i] {
+			orderReverseMatched++
+		} else {
+			if toleranceTakenReverse < tolerance && i < minimum-2 {
+				orderReverseMatched++
+				toleranceTakenReverse++
+			} else {
+				break
+			}
+		}
+	}
+
+	return orderReverseMatched
 }
 
-type DataItem struct {
-	Title   string `json:"title"`
-	Preview string `json:"preview"`
-	Source  string `json:"source"`
-	Link    string `json:"link"`
+func TimeDiff(endDateStr string) int64 {
+	// Parse the end date string into a time.Time object
+	endDate, err := time.Parse(time.RFC3339, endDateStr)
+	if err != nil {
+		fmt.Println("Error parsing end date:", err)
+		return 0
+	}
+
+	// Get the current date and time
+	currentDate := time.Now().UTC()
+
+	// Calculate the time difference
+	timeDifference := endDate.Sub(currentDate).Seconds()
+
+	// Check if the time difference is negative
+	if timeDifference <= 0 {
+		return 0
+	}
+	return int64(timeDifference)
 }
 
-type ApiResponse struct {
-	Data []DataItem `json:"data"`
-}
-
-func FetchData(reqData *APIRequest) (string, error) {
-	baseURL := "http://k8s-default-botdatas-9125b50e86-199550140.us-east-2.elb.amazonaws.com/" + reqData.Route
-
-	// Create a new HTTP request
-	req, err := http.NewRequest(reqData.Method, baseURL, nil)
+func SendMessageToTelegram(chatID int, message, telegramToken string) error {
+	// fmt.Println("sending message; ", message, chatID)
+	var TelegramApiUrl = "https://api.telegram.org"
+	url := fmt.Sprintf("%s/bot%s/sendMessage?chat_id=%d&text=%s", TelegramApiUrl, telegramToken, chatID, message)
+	// fmt.Println("url; ", url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Fatalf("Failed to create request: %v", err)
+		return fmt.Errorf("failed wrap request: %w", err)
 	}
-
-	// Send the HTTP request
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	client := http.Client{}
+	res, err := client.Do(req)
 	if err != nil {
-		log.Fatalf("The HTTP response failed with error %s\n", err)
+		return fmt.Errorf("failed send request: %w", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("Rrquest failed: %v", err)
-	}
+	defer res.Body.Close()
 
-	// Read the response body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("Failed to read response body: %v", err)
-	}
+	log.Printf("message sent successfully?\n%#v", res)
 
-	var responseBody ApiResponse
-
-	if err := json.Unmarshal(body, &responseBody); err != nil {
-		log.Fatalf("Failed to unmarshal user data: %v", err)
-	}
-
-	message := formatHTMLMessage(responseBody.Data[:12])
-
-	return message, nil
-
-}
-
-// Function to format data into HTML message
-func formatHTMLMessage(data []DataItem) string {
-	// Define the HTML template
-	const tmpl = `
-<b>NFT News - Past 24H (Sponsored by <a href="https://pr-1540.ddv7k8ml5gut2.amplifyapp.com/"> Kyzzen </a></b>)
-{{range $index, $item := .}}
-<b>{{add $index 1}}. {{$item.Title}}</b>
-{{$item.Preview}}
-<a href="{{$item.Link}}">Read More - {{capitalize $item.Source}}</a>
-{{end}}
-<i>Today's NFT News wrap-up was brought to you by <a href="https://pr-1540.ddv7k8ml5gut2.amplifyapp.com/"> Kyzzen </a>:</i>
-	`
-	funcMap := template.FuncMap{
-		"add":        func(a, b int) int { return a + b },
-		"capitalize": func(s string) string { return strings.ToUpper(string(s[0])) + s[1:] },
-	}
-
-	// Parse the template
-	t, err := template.New("message").Funcs(funcMap).Parse(tmpl)
-	if err != nil {
-		log.Fatalf("Error parsing template: %v", err)
-	}
-
-	// Execute the template with the data
-	var tpl bytes.Buffer
-	if err := t.Execute(&tpl, data); err != nil {
-		log.Fatalf("Error executing template: %v", err)
-	}
-
-	return tpl.String()
+	return nil
 }

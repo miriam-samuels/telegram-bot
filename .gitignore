@@ -1,1 +1,7 @@
-.env
+
+./.env.yaml
+./deploy.sh
+./kubernetest-manifests
+.env.yaml
+deploy.sh
+kubernetest-manifests
