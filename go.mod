@@ -3,7 +3,7 @@ module github.com/miriam-samuels/telegram-bot
 go 1.21.3
 
 require (
-	github.com/chromedp/cdproto v0.0.0-20240626232640-f933b107c653
+	github.com/chromedp/cdproto v0.0.0-20240721024200-dac8efcb39ce
 	github.com/chromedp/chromedp v0.9.5
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
